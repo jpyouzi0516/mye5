@@ -1,0 +1,42 @@
+import socket
+import struct
+import json
+import time
+
+# 定义Zabbix server的地址和端口号
+zabbix_server = '<zabbix server>'
+zabbix_port = 10051
+
+# 定义要发送的数据包
+packet = {
+    "request": "sender data",
+    "data": [
+        {
+            "host": "<hostname>",
+            "key": "test.alert",
+            "value": "This is a test alert from Python",
+            "clock": int(time.time()),
+            "ns": 0
+        }
+    ]
+}
+
+# 将数据包格式化为JSON字符串
+json_data = json.dumps(packet, separators=(',', ':'))
+
+# 将JSON字符串转换为二进制数据
+payload = struct.pack('<4sBQ%ds' % len(json_data), b'ZBXD', 1, len(json_data), json_data.encode('utf-8'))
+
+# 创建socket套接字并连接到Zabbix server
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect((zabbix_server, zabbix_port))
+
+# 发送数据包并接收响应消息
+sock.sendall(payload)
+response = sock.recv(1024)
+
+# 打印响应消息
+print(response.decode('utf-8'))
+
+# 关闭socket连接
+sock.close()
